@@ -284,16 +284,6 @@
         return;
     }
     
-    if (!self.userInformation) {
-        return;
-    } else {
-        
-        if (!self.userInformation[@"id"] || !self.userInformation[@"email"]) {
-            return;
-        }
-        
-    }
-    
     NSString *eventToString;
     
     switch (eventType) {
@@ -327,8 +317,6 @@
     NSMutableDictionary *params = [NSMutableDictionary dictionaryWithDictionary:@{@"event": eventToString,
                                                                                   @"shop_id": self.shopIdentifier,
                                                                                   @"ssid": self.ssid,
-                                                                                  @"user_id": self.userInformation[@"id"],
-                                                                                  @"user_email": self.userInformation[@"email"],
                                                                                   @"item_id[0]": infDict[@"itemId"],
                                                                                   @"price[0]": infDict[@"itemCost"],
                                                                                   @"categories[0]": categoryString}];
@@ -341,6 +329,18 @@
         
         [params setObject:infDict[@"itemQuantity"] forKey:@"amount[0]"];
         [params setObject:infDict[@"orderId"] forKey:@"order_id"];
+        
+    }
+    
+    if (self.userInformation) {
+        
+        if (self.userInformation[@"id"]) {
+            [params setObject:self.userInformation[@"id"] forKey:@"user_id"];
+        }
+        
+        if (self.userInformation[@"email"]) {
+            [params setObject:self.userInformation[@"email"] forKey:@"user_email"];
+        }
         
     }
     

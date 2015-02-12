@@ -10,7 +10,6 @@
 #import <CoreLocation/CoreLocation.h>
 #import "UIDevice+ModelDetailed.h"
 #import "AppDelegate.h"
-#import "BKController.h"
 #import "RBNotificationController.h"
 #import "NSDictionary+UrlEncoding.h"
 
@@ -45,7 +44,7 @@
 +(RBManager*)sharedManager {
     
     static dispatch_once_t p = 0;
-
+    
     __strong static RBManager *_sharedObject = nil;
     
     // executes a block object once and only once for the lifetime of an application
@@ -61,7 +60,7 @@
 -(instancetype)init {
     
     if (self = [super init]) {
-
+        
         _userDefaults = [NSUserDefaults standardUserDefaults];
         
         //Если система страше 8.0, запрашиваем разрешение на использование геолокации
@@ -75,7 +74,7 @@
                 [_locationManager requestAlwaysAuthorization];
             }
         }
-
+        
     }
     
     return self;
@@ -119,13 +118,6 @@
 -(void)getSsid {
     
     NSString *ssid = [_userDefaults objectForKey:@"rbssid"];
-    
-    /*if (ssid) {
-        
-        UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"Test" message:ssid delegate:nil cancelButtonTitle:@"OK" otherButtonTitles:nil];
-        [alert show];
-        
-    }*/
     
     if (!ssid) {
         
@@ -301,33 +293,58 @@
     }
     
     NSMutableString *categoryString = [NSMutableString string];
-    NSArray *categories = (NSArray*)infDict[@"categories"];
-    
-    if (categories != nil) {
-        for (NSNumber* category in categories) {
-            [categoryString appendString:[category stringValue]];
-            if (![[categories lastObject] isEqual:category]) {
-                [categoryString appendString:@","];
-            }
-        }
-    } else {
-        categoryString = [NSMutableString stringWithFormat:@"0"];
-    }
     
     NSMutableDictionary *params = [NSMutableDictionary dictionaryWithDictionary:@{@"event": eventToString,
                                                                                   @"shop_id": self.shopIdentifier,
-                                                                                  @"ssid": self.ssid,
-                                                                                  @"item_id[0]": infDict[@"itemId"],
-                                                                                  @"price[0]": infDict[@"itemCost"],
-                                                                                  @"categories[0]": categoryString}];
+                                                                                  @"ssid": self.ssid}];
     
-    if (eventType == RBEventTypePurchase) {
+    if (eventType != RBEventTypePurchase) {
         
-        if (!infDict[@"itemQuantity"] || !infDict[@"orderId"]) {
-            return;
+        NSArray *categories = (NSArray*)infDict[@"categories"];
+        
+        if (categories != nil) {
+            for (NSNumber* category in categories) {
+                [categoryString appendString:[category stringValue]];
+                if (![[categories lastObject] isEqual:category]) {
+                    [categoryString appendString:@","];
+                }
+            }
+        } else {
+            categoryString = [NSMutableString stringWithFormat:@"0"];
         }
         
-        [params setObject:infDict[@"itemQuantity"] forKey:@"amount[0]"];
+        [params setObject:infDict[@"itemId"] forKey:@"item_id[0]"];
+        [params setObject:infDict[@"itemCost"] forKey:@"price[0]"];
+        [params setObject:categoryString forKey:@"categories[0]"];
+        
+    } else if (eventType == RBEventTypePurchase) {
+        
+        for (int i = 0; i < ((NSArray*)infDict[@"itemIds"]).count; i ++) {
+            
+            NSArray *categories = (NSArray*)(infDict[@"categories"][i]);
+            
+            if (categories != nil) {
+                for (NSNumber* category in categories) {
+                    [categoryString appendString:[category stringValue]];
+                    if (![[categories lastObject] isEqual:category]) {
+                        [categoryString appendString:@","];
+                    }
+                }
+            } else {
+                categoryString = [NSMutableString stringWithFormat:@"0"];
+            }
+            
+            if (!infDict[@"itemQuantities"][i] || !infDict[@"orderId"]) {
+                return;
+            }
+            
+            [params setObject:infDict[@"itemIds"][i] forKey:[NSString stringWithFormat:@"item_id[%d]", i]];
+            [params setObject:infDict[@"itemCosts"][i] forKey: [NSString stringWithFormat:@"price[%d]", i]];
+            [params setObject:categoryString forKey: [NSString stringWithFormat: @"categories[%d]", i]];
+            [params setObject:infDict[@"itemQuantities"][i] forKey:[NSString stringWithFormat:@"amount[%d]", i]];
+            
+        }
+        
         [params setObject:infDict[@"orderId"] forKey:@"order_id"];
         
     }
@@ -353,9 +370,14 @@
     
     [NSURLConnection sendAsynchronousRequest:request queue:queue completionHandler:^(NSURLResponse *response, NSData *data, NSError *connectionError) {
         
+        if (!connectionError) {
+            
+        }
+        
     }];
     
 }
+
 
 -(void)getUserInformationWithURL:(NSString *)urlString {
     
@@ -382,8 +404,8 @@
                     
                     
                 } else {
-                
-
+                    
+                    
                     
                 }
                 
@@ -393,7 +415,7 @@
     } else {
         self.userInformation = [NSDictionary dictionaryWithDictionary:userDict];
     }
-
+    
     
 }
 

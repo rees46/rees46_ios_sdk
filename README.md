@@ -1,1 +1,1 @@
-Инструкция по установке и использованию на официальном сайте: http://memo.mkechinov.ru/display/R46D/iOS+SDK
+# DEPRACATED
